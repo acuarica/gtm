@@ -1,0 +1,8 @@
+[ver:1,total:1440]
+.gtm/terminal.app:1324,1528999200:720,1529002800:604,r
+../../go/src/github.com/git-time-metric/gtm/scm/git.go:55,1529002800:55,r
+../../go/src/github.com/git-time-metric/gtm/scm/git_test.go:25,1529002800:25,r
+../../go/src/github.com/git-time-metric/gtm/.gitignore:14,1529002800:14,r
+../../go/src/github.com/git-time-metric/gtm/util/test.go:14,1529002800:14,r
+../../go/src/github.com/git-time-metric/gtm/note/note_test.go:4,1529002800:4,r
+../../go/src/github.com/git-time-metric/gtm/note/note.go:4,1529002800:4,r
