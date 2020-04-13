@@ -48,6 +48,11 @@ func main() {
 				UI: ui,
 			}, nil
 		},
+		"web": func() (cli.Command, error) {
+			return &command.WebCmd{
+				UI: ui,
+			}, nil
+		},
 		"verify": func() (cli.Command, error) {
 			return &command.VerifyCmd{
 				UI:      ui,
