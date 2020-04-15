@@ -8,13 +8,10 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"math"
 	"net/http"
 	"strings"
 
-	"github.com/git-time-metric/gtm/project"
 	"github.com/git-time-metric/gtm/report"
-	"github.com/git-time-metric/gtm/scm"
 	"github.com/mitchellh/cli"
 )
 
@@ -54,8 +51,9 @@ func (c WebCmd) Run(args []string) int {
 
 	c.UI.Output(fmt.Sprintf("Starting local web server at port %d ... ", port))
 
-	http.HandleFunc("/", c.ViewHandler)
-	http.HandleFunc("/data", c.DataHandler)
+	http.HandleFunc("/", c.viewHandler)
+	http.HandleFunc("/data/projects/totals", c.createDataHandler(report.GetProjectTotals))
+	http.HandleFunc("/data/status/totals", c.createDataHandler(report.GetStatusTotals))
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
 		c.UI.Error(err.Error())
@@ -65,55 +63,21 @@ func (c WebCmd) Run(args []string) int {
 	return 0
 }
 
-// ViewHandler creates the index handler.
-func (c WebCmd) ViewHandler(w http.ResponseWriter, r *http.Request) {
+func (c WebCmd) viewHandler(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("web/index.html")
 	t.Execute(w, nil)
 }
 
-// DataHandler returns the commit data for all projects.
-func (c WebCmd) DataHandler(w http.ResponseWriter, r *http.Request) {
-	index, err := project.NewIndex()
-	if err != nil {
-		c.UI.Error(err.Error())
-	}
-
-	tagList := []string{}
-	projects, err := index.Get(tagList, true)
-	if err != nil {
-		c.UI.Error(err.Error())
-	}
-
-	limiter, err := scm.NewCommitLimiter(math.MaxUint32,
-		"", "", "", "",
-		false, false, false, false,
-		false, false, false, false)
-	if err != nil {
-		c.UI.Error(err.Error())
-	}
-
-	projCommits := []report.ProjectCommits{}
-	for _, p := range projects {
-		commits, err := scm.CommitIDs(limiter, p)
+func (c WebCmd) createDataHandler(f func(r *http.Request) ([]byte, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		js, err := f(r)
 		if err != nil {
-			c.UI.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		fmt.Println("%s", p)
-		projCommits = append(projCommits, report.ProjectCommits{Path: p, Commits: commits})
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(js)
 	}
-
-	for _, pc := range projCommits {
-		fmt.Println("%d", len(pc.Commits))
-	}
-
-	js, err := report.GetProjects(projCommits)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
 }
 
 // Synopsis return help for web command

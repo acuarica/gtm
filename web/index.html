@@ -1,47 +1,88 @@
-<h1>Editing {{.Title}}</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>gtm Dashboard</title>
+</head>
 
-asdf
+<body>
 
-<form action="/save/{{.Title}}" method="POST">
-<div><textarea name="body" rows="20" cols="80">{{printf "%s" .Body}}</textarea></div>
-<div><input type="submit" value="Save"></div>
-</form>
+    <h1>Git Time Metric Dashboard</h1>
+
+    <!-- <div style="position: relative; height:40vh; width:80vw"> -->
+        <p>
+
+    <canvas id="myChart" width="200" height="200"></canvas>
+        </p>
+    <!-- </div> -->
+    <!-- <div style="position: relative; height:40vh; width:80vw"> -->
+        <p>
+
+    <canvas id="projectStatusChart" width="200" height="200"></canvas>
+        </p>
+    <!-- </div> -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-colorschemes"></script>
+
+    <script>
+
+        function pie(url, id, title) {
+        var ctx = document.getElementById(id).getContext('2d');
+
+        fetch(url).then(data => {
+            return data.json()
+        }).then(res => {
+            var keys = Object.keys(res)
+            var values = Object.values(res)
+            var chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: values.map(x => x.Total),
+                        duration: values.map(x => x.Label),
+
+                    }],
+                    labels: keys,
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    title: {
+                        display: true,
+                        text: title
+                    },
+                    tooltips: {
+                        callbacks: {
+                            label: function (tooltipItem, data) {
+                                var ds = data.datasets[tooltipItem.datasetIndex];
+                                var duration = ds.duration[tooltipItem.index]
+                                var project = data.labels[tooltipItem.index]
+                                console.log(duration)
+                                // var label = data.datasets[tooltipItem.datasetIndex].index || '';
+                                return project + ": " + duration
+
+                            }
+                        }
+                    },
+                    plugins: {
+                        colorschemes: {
+                            scheme: 'office.BlackTie6'
+                        }
+                    }
+                }
+            });
+
+            // chart.data.datasets[0].data = keys
+            // chart.data.labels.data = values
+            console.log(keys)
+            console.log(values)
+        })
 
 
-<canvas id="myChart"></canvas>
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+        pie("/data/projects/totals", 'myChart', 'Reported time by Project')
+        pie("/data/status/totals", "projectStatusChart", 'Status time by Project')
+    </script>
+</body>
 
-<script>
-
-
-var ctx = document.getElementById('myChart').getContext('2d');
-var chart = new Chart(ctx, {
-    // The type of chart we want to create
-    type: 'line',
-
-    // The data for our dataset
-    data: {
-        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-        datasets: [{
-            label: 'My First dataset',
-            backgroundColor: 'rgb(255, 99, 132)',
-            borderColor: 'rgb(255, 99, 132)',
-            data: [0, 10, 5, 2, 20, 30, 45]
-        }]
-    },
-
-    // Configuration options go here
-    options: {}
-});
-
-fetch("/data").then(data => {
-    return data.json()
-}).then(res => {
-    const data = Object.values(res)
-    chart.data.datasets[0].data = data
-    // chart.labels
-    console.log(data)
-})
-
-</script>
+</html>
