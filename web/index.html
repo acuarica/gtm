@@ -33,6 +33,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix/dist/chartjs-chart-matrix.js"></script>
   <script>
 
+    const colorSchemes = Chart.colorschemes;
+    console.log(colorSchemes);
+
     Chart.plugins.unregister(ChartDataLabels);
 
     const colors = {
@@ -132,7 +135,7 @@
           title: { display: true, text: 'Reported time by Project' },
           legend: { position: 'left', },
           plugins: {
-            colorschemes: { scheme: 'office.BlackTie6' },
+            // colorschemes: { scheme: 'office.BlackTie6' },
             datalabels: {
               display: 'auto',
               formatter: (value, context) => hhmm(value),
