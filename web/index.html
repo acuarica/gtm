@@ -164,15 +164,6 @@
             return {
               label: p.name,
               data: p.timelineMatrix,
-              backgroundColor2: function (ctx) {
-                const value = ctx.dataset.data[ctx.dataIndex].v;
-                const levels = 3;
-                const alpha = Math.floor(value * levels / 3600) / levels + (1 / levels);
-                console.log(ctx, value, alpha);
-                BlackTie6 = ['#6f6f74', '#a7b789', '#beae98', '#92a9b9', '#9c8265', '#8d6974'];
-                var c = BlackTie6[ctx.datasetIndex % BlackTie6.length];
-                return Color(c).alpha(alpha).rgbString();
-              },
               borderWidth: 1,
               width: function (ctx) {
                 const value = ctx.dataset.data[ctx.dataIndex].v;
