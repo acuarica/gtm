@@ -10,23 +10,19 @@
   <nav class="navbar navbar-light bg-light">
     <a class="navbar-brand" href="#"><img src="https://cloud.githubusercontent.com/assets/630550/19619834/43c460dc-9835-11e6-8652-1c8fff91cf02.png" width="82" height="34" class="d-inline-block align-top" alt="">Dashboard</a>
   </nav>
-
-  <div style="width:40%;height:400px;">
-    <canvas id="projectTotalsChart"></canvas>
-  </div>
-  <div style="width:60%;height:500px;">
-    <canvas id="activityChart"></canvas>
-  </div>
-  <!-- <div style="width:40%;height:200px;">
+  <main role="main" class="container">
+    <div style="width:40%;height:400px;">
+      <canvas id="projectTotalsChart"></canvas>
+    </div>
+    <!-- <div style="width:60%;height:500px;"> -->
+    <!-- <div> -->
+    <div style="height:200px;">
+      <canvas id="activityChart"></canvas>
+    </div>
+    <!-- <div style="width:40%;height:200px;">
     <canvas id="projectStatusChart" width="200" height="200"></canvas>
   </div> -->
-  <div style="width:75%;height:200px;">
-    <canvas id="linechart" height="400px"></canvas>
-  </div>
-  <div class="chart-container" style="position: relative; height:10vh; width:80vw">
-    <canvas id="timelineChart"></canvas>
-  </div>
-
+  </main>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-colorschemes"></script>
@@ -39,7 +35,7 @@
 
     Chart.plugins.unregister(ChartDataLabels);
 
-    var colors = {
+    const colors = {
       blue: 'rgb(54, 162, 235)',
     };
 
@@ -49,10 +45,8 @@
 
     function hhmm(secs) {
       var minutes = Math.floor(secs / 60);
-      // secs = secs % 60;
-      var hours = Math.floor(minutes / 60)
+      const hours = Math.floor(minutes / 60)
       minutes = minutes % 60;
-      // return `${pad0(hours)}h ${pad0(minutes)}m ${pad0(secs)}s`;
       return `${pad0(hours)}h ${pad0(minutes)}m`;
     }
 
@@ -85,9 +79,6 @@
             if (secs > 3600) console.warn("gtm check: Duration (in seconds) should be less than 3600:", secs);
             if (timestamp % 3600 !== 0) console.warn("gtm check: Timestamp (unix time) should be by the hour:", timestamp);
             project.total += secs;
-
-            // const hour = timestamp % (3600 * 24);
-            // const date = timestamp - hour;
             const date = moment.unix(timestamp).startOf('day').format('YYYY-MM-DD');
             const hour = moment.unix(timestamp).hour();
             let dateline = project.timeline[date];
@@ -95,11 +86,10 @@
               dateline = {};
               project.timeline[date] = dateline;
             }
-            // let hourline = dateline[hour / 3600];
-            let hourline = dateline[hour ];
+            let hourline = dateline[hour];
             if (hourline === undefined) {
               hourline = { total: 0 };
-              dateline[hour ] = hourline;
+              dateline[hour] = hourline;
             }
             hourline.total += secs;
             filesecs += secs;
@@ -113,8 +103,6 @@
         for (const date in p.timeline) {
           for (const hour in p.timeline[date]) {
             const secs = p.timeline[date][hour];
-            // if (secs > 3600) 
-            // console.warn("gtm check: Duration (in seconds) should be less than 3600:", secs);
             data.push({
               x: `${pad0(hour)}:00`, y: date, v: secs.total,
             });
@@ -128,8 +116,6 @@
         }
         p.timelineMatrix = data;
       });
-      console.log(projects);
-      console.log(daily);
 
       newchart('projectTotalsChart', {
         type: 'doughnut',
@@ -187,143 +173,78 @@
                 var c = BlackTie6[ctx.datasetIndex % BlackTie6.length];
                 return Color(c).alpha(alpha).rgbString();
               },
-              borderWidth: { left: 1, right: 1, top: 1, bottom: 1 },
+              borderWidth: 1,
               width: function (ctx) {
                 const value = ctx.dataset.data[ctx.dataIndex].v;
                 const levels = 10;
                 const alpha = Math.floor(value * levels / 3600) / levels + (1 / levels);
                 var a = ctx.chart.chartArea;
-                return (a.right - a.left) / 24;
+                return (a.right - a.left) / 25;
               },
               height: function (ctx) {
                 const value = ctx.dataset.data[ctx.dataIndex].v;
                 const levels = 4;
                 const alpha = Math.floor(value * levels / 3600) / levels + (1 / levels);
                 var a = ctx.chart.chartArea;
-                return alpha * (a.bottom - a.top) / 8;
+                return alpha * (a.bottom - a.top) / 10;
               },
             }
           }),
         },
         options: {
+          maintainAspectRatio: false,
           scales: {
             xAxes: [{
               type: 'time',
-              time: {
-                unit: 'hour',
-                parser: 'HH:mm',
-              },
-              ticks: {
-                // min: 0,
-                // source: 'labels',
-              }
+              offset: true,
+              time: { unit: 'hour', parser: 'HH:mm' },
+              gridLines: { drawOnChartArea: false, },
             }],
             yAxes: [{
               type: 'time',
-              // offset: true,
-              time: {
-                unit: 'day',
-                parser: 'YYYY-MM-DD',
-                // parser: (value) => {
-                //   // value = moment.unix(value).utc();
-                //   // console.log(value);
-                //   return value;
-
-                // }
-              },
+              offset: true,
+              time: { unit: 'day', parser: 'YYYY-MM-DD' },
               ticks: {
-
+                // reverse: true,
                 // min: min.format('X'),
                 // max: max.format('X'),
               },
-            },
-
-
-
-            {
-              type: 'time', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
-              // display: true,
+              gridLines: { drawOnChartArea: false, },
+            }, {
+              type: 'time',
+              offset: true,
               position: 'right',
-              time: {
-                unit: 'day',
-                // parser: 'X',
-                parser: 'YYYY-MM-DD',
-                // parser: (value) => {
-                //   // value = moment.unix(value).utc();
-                //   console.log(value);
-                //   return value;
-
-                // }
-              },
-
+              time: { unit: 'day', parser: 'YYYY-MM-DD' },
               ticks: {
-                // Include a dollar sign in the ticks
+                // reverse: true,
                 callback: function (value, index, values) {
-                  let d = moment(values[index].value).format('YYYY-MM-DD');
-                  // d = d.utc.format('X');
-                  console.log(values[index].value, d);
-                  // console.log(values[index].value, d, daily, d.unix());
-                  // console.log(moment(values[index].value), 'x');
-                  // console.log(i === 1586476800, i, daily[1586476800]);
-                  // console.log(index, i, daily, daily[i]);
+                  const d = moment(values[index].value).format('YYYY-MM-DD');
                   const date = daily[d];
                   return date === undefined ? value : hhmm(date.total);
                 }
-              }
-
-              // reverse: true,
-              // id: 'y-axis-2',
-
-              // grid line settings
-              // gridLines: {
-              // drawOnChartArea: false, // only want the grid lines for one axis to show up
-              // },
-            }
-
-
-
-
-            ],
+              },
+              gridLines: { drawOnChartArea: false, },
+            }],
           },
           plugins: {
-
             colorschemes: { scheme: 'office.BlackTie6' },
-
             zoom: {
               pan: {
                 enabled: true,
                 mode: "y",
-                // speed: 100,
-                // threshold: 10,
+                speed: 100,
+                threshold: 10,
               },
+              zoom: {
+                enabled: true,
+                mode: 'y',
+                speed: 0.1,
+                sensitivity: 3,
+              }
             },
-
-
           }
         }
       });
-    });
-
-    function loadchart(url, chartid, configf) {
-      fetchjson(url, response => {
-        var ctx = document.getElementById(chartid).getContext('2d');
-        var chart = new Chart(ctx, configf(response));
-      })
-    }
-
-    loadchart('/data/timeline', 'linechart', response => {
-      return {
-        type: 'bar',
-        data: {
-          datasets: [{
-            data: response.map(x => x.Seconds),
-            duration: response.map(x => x.Duration),
-          }],
-          labels: response.map(x => moment(x.Date, "ddd MMM DD YYYY")),
-          // labels: res.map(x => x.Date),
-        },
-        options: options("Timeline hours"),
-      }
     });
 
     // $('#today').on('click', function (e) {
@@ -350,144 +271,6 @@
     // $('#lastyear').on('click', function (e) {
     //   pie("/data/projects/totals?lastyear=1", 'myChart', 'Reported time by Project')
     // })
-
-    function adapter(fileTimeline) {
-      var res = [];
-      for (var unixTimestamp in fileTimeline) {
-        var from = moment.unix(unixTimestamp);
-        // var to = from.add(Number(fileTimeline[unixTimestamp]), 'seconds');
-        var to = moment.unix(Number(unixTimestamp) + Number(fileTimeline[unixTimestamp]));
-        console.log(from.format(), to.format(), fileTimeline[unixTimestamp]);
-        console.log(from === to);
-        res.push([from, to, "hola"]);
-      }
-      return res;
-    }
-
-
-
-    function timeline() {
-      var ctx = document.getElementById('timelineChart').getContext('2d');
-      fetch('/data/commits').then(data => {
-        return data.json()
-      }).then(res => {
-
-        var ds = res[0].Note.Files.map(f => { return { data: adapter(f.Timeline) } });
-        // console.log(ds)
-        var chart = new Chart(ctx, {
-          maintainAspectRatio: false,
-          type: 'timeline',
-          "data": {
-            "labels": res[0].Note.Files.map(f => f.SourceFile),
-            datasets: ds,
-            // [
-            //   "Coffol Graph",
-            //   "heater1"
-            // ],
-            // datasets: res[0].Note.Files.map(f => { data: adapter(f.Timeline) }),
-            // "datasets32": [
-            //   {
-            //     "data": [
-            //       [
-            //         "2018-01-22T15:00:00.000Z",
-            //         "2018-01-23T03:40:44.626Z",
-            //         "Unksadfnown"
-            //       ]
-            //     ]
-            //   },
-            //   {
-            //     "data": [
-            //       [
-            //         "2018-01-22T16:00:00.000Z",
-            //         "2018-01-22T19:00:00.000Z",
-            //         "On"
-            //       ],
-            //       [
-            //         "2018-01-22T20:00:00.000Z",
-            //         "2018-01-23T02:57:55.437Z",
-            //         "Off"
-            //       ],
-            //       [
-            //         "2018-01-23T04:57:55.437Z",
-            //         "2018-01-23T05:40:44.626Z",
-            //         "On"
-            //       ]
-            //     ]
-            //   }
-            // ]
-          },
-
-
-
-          options: {
-            "elements": {
-              "colorFunction": function (text, data, dataset, index) {
-                return Color('blue');
-              },
-              "showText": true,
-              "textPadding": 0
-            },
-
-            scales: {
-
-              yAxes: [{
-                type: 'category',
-                position: 'right',
-                barThickness: 10,
-              }],
-            }
-          }
-        });
-
-      })
-
-    }
-
-
-    var options = function (title) {
-      return {
-        maintainAspectRatio: false,
-        title: { display: true, text: title },
-        tooltips: {
-          callbacks: {
-            label: function (tooltipItem, data) {
-              var ds = data.datasets[tooltipItem.datasetIndex];
-              var duration = ds.duration[tooltipItem.index]
-              // var project = data.labels[tooltipItem.index]
-              // console.log(duration)
-              // return project + ": " + duration
-              return duration
-            }
-          }
-        },
-        plugins: {
-          colorschemes: { scheme: 'office.BlackTie6' },
-          zoom: {
-            pan: {
-              enabled: true,
-              mode: "x",
-              speed: 100,
-              threshold: 10,
-            },
-            zoom: {
-              enabled: true,
-              mode: 'x',
-              speed: 0.1,
-              sensitivity: 3,
-            }
-          },
-        },
-        scales: {
-          xAxes: [{
-            type: 'time',
-            time: { parser: "ddd MMM DD YYYY" }
-          }]
-        },
-      }
-    };
-
-
-
 
     // pie("/data/status/totals", "projectStatusChart", 'Status time by Project')
   </script>
