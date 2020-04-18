@@ -1,88 +1,407 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>gtm Dashboard</title>
+  <meta charset="utf-8">
+  <title>gtm Dashboard</title>
+  <style>
+    canvas {
+      -moz-user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+    }
+  </style>
 </head>
-
 <body>
-
-    <h1>Git Time Metric Dashboard</h1>
-
-    <!-- <div style="position: relative; height:40vh; width:80vw"> -->
-        <p>
-
-    <canvas id="myChart" width="200" height="200"></canvas>
-        </p>
-    <!-- </div> -->
-    <!-- <div style="position: relative; height:40vh; width:80vw"> -->
-        <p>
-
+  <div style="width:30%;height:200px;">
+    <canvas id="projectTotalsChart"></canvas>
+  </div>
+  <div style="width:60%;height:500px;">
+    <canvas id="activityChart"></canvas>
+  </div>
+  <!-- <div style="width:40%;height:200px;">
     <canvas id="projectStatusChart" width="200" height="200"></canvas>
-        </p>
-    <!-- </div> -->
+  </div> -->
+  <div style="width:75%;height:200px;">
+    <canvas id="linechart" height="400px"></canvas>
+  </div>
+  <div class="chart-container" style="position: relative; height:10vh; width:80vw">
+    <canvas id="timelineChart"></canvas>
+  </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-colorschemes"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-colorschemes"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@0.7.4"></script>
+  <script src="https://unpkg.com/chartjs-chart-timeline@0.3.0/timeline.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix/dist/chartjs-chart-matrix.js"></script>
+  <script>
 
-    <script>
+    Chart.plugins.unregister(ChartDataLabels);
 
-        function pie(url, id, title) {
-        var ctx = document.getElementById(id).getContext('2d');
+    var colors = {
+      blue: 'rgb(54, 162, 235)',
+    };
 
-        fetch(url).then(data => {
-            return data.json()
-        }).then(res => {
-            var keys = Object.keys(res)
-            var values = Object.values(res)
-            var chart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: values.map(x => x.Total),
-                        duration: values.map(x => x.Label),
+    function pad0(num) {
+      return ("0" + num).slice(-2);
+    }
 
-                    }],
-                    labels: keys,
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    title: {
-                        display: true,
-                        text: title
-                    },
-                    tooltips: {
-                        callbacks: {
-                            label: function (tooltipItem, data) {
-                                var ds = data.datasets[tooltipItem.datasetIndex];
-                                var duration = ds.duration[tooltipItem.index]
-                                var project = data.labels[tooltipItem.index]
-                                console.log(duration)
-                                // var label = data.datasets[tooltipItem.datasetIndex].index || '';
-                                return project + ": " + duration
+    function hhmmss(secs) {
+      var minutes = Math.floor(secs / 60);
+      secs = secs % 60;
+      var hours = Math.floor(minutes / 60)
+      minutes = minutes % 60;
+      return `${pad0(hours)}h ${pad0(minutes)}m ${pad0(secs)}s`;
+    }
 
-                            }
-                        }
-                    },
-                    plugins: {
-                        colorschemes: {
-                            scheme: 'office.BlackTie6'
-                        }
-                    }
-                }
-            });
+    function fetchjson(url, f) {
+      fetch(`${url}${window.location.search}`).then(data => data.json()).then(f)
+    }
 
-            // chart.data.datasets[0].data = keys
-            // chart.data.labels.data = values
-            console.log(keys)
-            console.log(values)
-        })
+    function newchart(chartid, config) {
+      const ctx = document.getElementById(chartid).getContext('2d');
+      new Chart(ctx, config);
+    }
 
-
+    fetchjson('/data/commits', res => {
+      const projects = {};
+      for (const commit of res) {
+        let project = projects[commit.Project];
+        if (project === undefined) {
+          project = { name: commit.Project, total: 0, commitcount: 0, timeline: {} };
+          projects[commit.Project] = project;
         }
+        project.commitcount++;
+        for (const file of commit.Note.Files) {
+          let filesecs = 0;
+          for (const timestamp in file.Timeline) {
+            const secs = file.Timeline[timestamp];
+            if (secs > 3600) console.warn("gtm check: Duration (in seconds) should be less than 3600:", secs);
+            if (timestamp % 3600 !== 0) console.warn("gtm check: Timestamp (unix time) should be by the hour:", timestamp);
+            project.total += secs;
+            const hour = timestamp % (3600 * 24);
+            const date = timestamp - hour;
+            let dateline = project.timeline[date];
+            if (dateline === undefined) {
+              dateline = {};
+              project.timeline[date] = dateline;
+            }
+            let hourline = dateline[hour / 3600];
+            if (hourline === undefined) {
+              hourline = { total: 0 };
+              dateline[hour / 3600] = hourline;
+            }
+            hourline.total += secs;
+            filesecs += secs;
+          }
+          if (filesecs !== file.TimeSpent) console.warn("gtm check: Timeline seconds does not add up to duration in file.");
+        }
+      }
+      Object.values(projects).map(p => {
+        const data = [];
+        for (const date in p.timeline) {
+          for (const hour in p.timeline[date]) {
+            const secs = p.timeline[date][hour];
+            data.push({
+              x: date, y: `${pad0(hour)}:00`, v: secs.total,
+            });
+          }
+        }
+        p.timelineMatrix = data;
+      });
+      console.log(projects);
 
-        pie("/data/projects/totals", 'myChart', 'Reported time by Project')
-        pie("/data/status/totals", "projectStatusChart", 'Status time by Project')
-    </script>
+      newchart('projectTotalsChart', {
+        type: 'doughnut',
+        plugins: [ChartDataLabels],
+        data: {
+          datasets: [{
+            data: Object.values(projects).map(x => x.total),
+            commitcounts: Object.values(projects).map(x => x.commitcount),
+          }],
+          labels: Object.keys(projects),
+        },
+        options: {
+          maintainAspectRatio: false,
+          title: { display: true, text: 'Reported time by Project' },
+          legend: { position: 'left', },
+          plugins: {
+            colorschemes: { scheme: 'office.BlackTie6' },
+            datalabels: {
+              display: 'auto',
+              formatter: (value, context) => hhmmss(value),
+            },
+          },
+          tooltips: {
+            callbacks: {
+              label: (tooltipItem, data) => {
+                const i = tooltipItem.index;
+                const ds = data.datasets[0];
+                const commitcount = ds.commitcounts[i];
+                const committext = commitcount == 1 ? 'commit' : 'commits';
+                return `${data.labels[i]}: ${hhmmss(ds.data[i])} (${commitcount} ${committext})`;
+              },
+            }
+          },
+        }
+      });
+
+      newchart('activityChart', {
+        type: 'matrix',
+        data: {
+          datasets32: [{
+            // data: data,
+
+
+          },
+          // { data: data },
+          ],
+          datasets: Object.values(projects).map(p => {return {
+            label: p.name,
+            data:p.timelineMatrix,
+            backgroundColor: function (ctx) {
+              var value = ctx.dataset.data[ctx.dataIndex].v;
+              // var alpha = (value - 5) / 40;
+              var alpha = value / 3600;
+              console.log(value);
+              BlackTie6 = ['#6f6f74', '#a7b789', '#beae98', '#92a9b9', '#9c8265', '#8d6974'];
+              var c = BlackTie6[ctx.datasetIndex%BlackTie6.length];
+
+
+              // return Color('green').alpha(alpha).rgbString();
+              return Color(c).alpha(alpha).rgbString();
+            },
+            // borderColor: function (ctx) {
+            //   var value = ctx.dataset.data[ctx.dataIndex].v;
+            //   var alpha = (value) / 3600;
+            //   return Color('green').alpha(alpha).darken(0.3).rgbString();
+            // },
+            borderWidth: { left: 0, right: 0 },
+            width2: function (ctx) {
+              var a = ctx.chart.chartArea;
+              return (a.right - a.left) / 40.5;
+            },
+            height: function (ctx) {
+              var a = ctx.chart.chartArea;
+              return (a.bottom - a.top) / 24;
+            },
+          }}),
+        },
+        options: {
+          scales: {
+            xAxes: [{
+              type: 'time',
+              offset: true,
+              time: {
+                unit: 'day',
+                parser: 'X',
+              },
+              ticks: {},
+            }],
+            yAxes: [{
+              type: 'time',
+              time: {
+                unit: 'hour',
+                parser: 'HH:mm',
+              },
+              ticks: {
+                source: 'labels',
+              }
+            }],
+          },
+        }
+      });
+    });
+
+    function loadchart(url, chartid, configf) {
+      fetchjson(url, response => {
+        var ctx = document.getElementById(chartid).getContext('2d');
+        var chart = new Chart(ctx, configf(response));
+      })
+    }
+
+    loadchart('/data/timeline', 'linechart', response => {
+      return {
+        type: 'bar',
+        data: {
+          datasets: [{
+            data: response.map(x => x.Seconds),
+            duration: response.map(x => x.Duration),
+          }],
+          labels: response.map(x => moment(x.Date, "ddd MMM DD YYYY")),
+          // labels: res.map(x => x.Date),
+        },
+        options: options("Timeline hours"),
+      }
+    });
+
+    // $('#today').on('click', function (e) {
+    //   pie("/data/projects/totals?today=1", 'myChart', 'Reported time by Project')
+    // })
+    // $('#yesterday').on('click', function (e) {
+    //   pie("/data/projects/totals?yesterday=1", 'myChart', 'Reported time by Project')
+    // })
+    // $('#thisweek').on('click', function (e) {
+    //   pie("/data/projects/totals?thisweek=1", 'myChart', 'Reported time by Project')
+    // })
+    // $('#lastweek').on('click', function (e) {
+    //   pie("/data/projects/totals?lastweek=1", 'myChart', 'Reported time by Project')
+    // })
+    // $('#thismonth').on('click', function (e) {
+    //   pie("/data/projects/totals?thismonth=1", 'myChart', 'Reported time by Project')
+    // })
+    // $('#lastmonth').on('click', function (e) {
+    //   pie("/data/projects/totals?lastmonth=1", 'myChart', 'Reported time by Project')
+    // })
+    // $('#thisyear').on('click', function (e) {
+    //   pie("/data/projects/totals?thisyear=1", 'myChart', 'Reported time by Project')
+    // })
+    // $('#lastyear').on('click', function (e) {
+    //   pie("/data/projects/totals?lastyear=1", 'myChart', 'Reported time by Project')
+    // })
+
+    function adapter(fileTimeline) {
+      var res = [];
+      for (var unixTimestamp in fileTimeline) {
+        var from = moment.unix(unixTimestamp);
+        // var to = from.add(Number(fileTimeline[unixTimestamp]), 'seconds');
+        var to = moment.unix(Number(unixTimestamp) + Number(fileTimeline[unixTimestamp]));
+        console.log(from.format(), to.format(), fileTimeline[unixTimestamp]);
+        console.log(from === to);
+        res.push([from, to, "hola"]);
+      }
+      return res;
+    }
+
+
+
+    function timeline() {
+      var ctx = document.getElementById('timelineChart').getContext('2d');
+      fetch('/data/commits').then(data => {
+        return data.json()
+      }).then(res => {
+
+        var ds = res[0].Note.Files.map(f => { return { data: adapter(f.Timeline) } });
+        // console.log(ds)
+        var chart = new Chart(ctx, {
+          maintainAspectRatio: false,
+          type: 'timeline',
+          "data": {
+            "labels": res[0].Note.Files.map(f => f.SourceFile),
+            datasets: ds,
+            // [
+            //   "Coffol Graph",
+            //   "heater1"
+            // ],
+            // datasets: res[0].Note.Files.map(f => { data: adapter(f.Timeline) }),
+            // "datasets32": [
+            //   {
+            //     "data": [
+            //       [
+            //         "2018-01-22T15:00:00.000Z",
+            //         "2018-01-23T03:40:44.626Z",
+            //         "Unksadfnown"
+            //       ]
+            //     ]
+            //   },
+            //   {
+            //     "data": [
+            //       [
+            //         "2018-01-22T16:00:00.000Z",
+            //         "2018-01-22T19:00:00.000Z",
+            //         "On"
+            //       ],
+            //       [
+            //         "2018-01-22T20:00:00.000Z",
+            //         "2018-01-23T02:57:55.437Z",
+            //         "Off"
+            //       ],
+            //       [
+            //         "2018-01-23T04:57:55.437Z",
+            //         "2018-01-23T05:40:44.626Z",
+            //         "On"
+            //       ]
+            //     ]
+            //   }
+            // ]
+          },
+
+
+
+          options: {
+            "elements": {
+              "colorFunction": function (text, data, dataset, index) {
+                return Color('blue');
+              },
+              "showText": true,
+              "textPadding": 0
+            },
+
+            scales: {
+
+              yAxes: [{
+                type: 'category',
+                position: 'right',
+                barThickness: 10,
+              }],
+            }
+          }
+        });
+
+      })
+
+    }
+    // timeline();
+
+
+    var options = function (title) {
+      return {
+        maintainAspectRatio: false,
+        title: { display: true, text: title },
+        tooltips: {
+          callbacks: {
+            label: function (tooltipItem, data) {
+              var ds = data.datasets[tooltipItem.datasetIndex];
+              var duration = ds.duration[tooltipItem.index]
+              // var project = data.labels[tooltipItem.index]
+              // console.log(duration)
+              // return project + ": " + duration
+              return duration
+            }
+          }
+        },
+        plugins: {
+          colorschemes: { scheme: 'office.BlackTie6' },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: "x",
+              speed: 100,
+              threshold: 10,
+            },
+            zoom: {
+              enabled: true,
+              mode: 'x',
+              speed: 0.1,
+              sensitivity: 3,
+            }
+          },
+        },
+        scales: {
+          xAxes: [{
+            type: 'time',
+            time: { parser: "ddd MMM DD YYYY" }
+          }]
+        },
+      }
+    };
+
+
+
+
+    // pie("/data/status/totals", "projectStatusChart", 'Status time by Project')
+  </script>
 </body>
-
 </html>

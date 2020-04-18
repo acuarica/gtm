@@ -52,7 +52,9 @@ func (c WebCmd) Run(args []string) int {
 	c.UI.Output(fmt.Sprintf("Starting local web server at port %d ... ", port))
 
 	http.HandleFunc("/", c.viewHandler)
+	http.HandleFunc("/data/commits", c.createDataHandler(report.GetCommitNotes))
 	http.HandleFunc("/data/projects/totals", c.createDataHandler(report.GetProjectTotals))
+	http.HandleFunc("/data/timeline", c.createDataHandler(report.GetTimeline))
 	http.HandleFunc("/data/status/totals", c.createDataHandler(report.GetStatusTotals))
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
@@ -64,6 +66,7 @@ func (c WebCmd) Run(args []string) int {
 }
 
 func (c WebCmd) viewHandler(w http.ResponseWriter, r *http.Request) {
+	// FIXME: Working dir needs to be in project root
 	t, _ := template.ParseFiles("web/index.html")
 	t.Execute(w, nil)
 }
