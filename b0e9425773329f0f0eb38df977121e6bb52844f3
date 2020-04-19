@@ -1,0 +1,7 @@
+[ver:1,total:4600]
+.gtm/terminal.app:2430,1587243600:50,1587247200:270,1587250800:1190,1587254400:30,1587276000:120,1587279600:60,1587294000:360,1587297600:180,1587301200:170,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/command/web.go:1640,1587250800:790,1587254400:390,1587258000:180,1587301200:280,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/webHTML/index.html:420,1587258000:180,1587276000:60,1587279600:180,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/web/index.html:50,1587243600:20,1587247200:30,r
+command/web.go:30,1587301200:30,m
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/scm/git.go:30,1587243600:30,r
