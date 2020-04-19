@@ -1,0 +1,6 @@
+[ver:1,total:900]
+.gtm/terminal.app:455,1587308400:275,1587315600:180,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/command/web.go:235,1587308400:235,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/report/web.go:90,1587308400:90,r
+command/web.go:60,1587326400:60,m
+report/web.go:60,1587326400:60,m
