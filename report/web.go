@@ -15,7 +15,7 @@ import (
 	"github.com/git-time-metric/gtm/util"
 )
 
-// GetTimeline gets
+// GetCommitNotes gets
 func GetCommitNotes(r *http.Request) ([]byte, error) {
 	notes, err := getCommitNotes(r)
 	if err != nil {
@@ -25,62 +25,41 @@ func GetCommitNotes(r *http.Request) ([]byte, error) {
 	return json.Marshal(notes)
 }
 
-// GetProjectTotals returns the project summary report
-func GetProjectTotals(r *http.Request) ([]byte, error) {
-	notes, err := getCommitNotes(r)
+// GetStatusTotals returns the status data.
+func GetStatusTotals(r *http.Request) ([]byte, error) {
+	var (
+		err        error
+		commitNote note.CommitNote
+	)
+
+	index, err := project.NewIndex()
 	if err != nil {
 		return nil, err
 	}
 
-	projectTotals := map[string]int{}
-	projects := map[string]struct {
+	tagList := []string{}
+	projects, err := index.Get(tagList, true)
+	if err != nil {
+		return nil, err
+	}
+
+	projectTotals := map[string]struct {
 		Total int
 		Label string
 	}{}
-
-	for _, n := range notes {
-		projectTotals[n.Project] += n.Note.Total()
-	}
-
-	for p, total := range projectTotals {
-		projects[p] = struct {
+	for _, projPath := range projects {
+		if commitNote, err = metric.Process(true, projPath); err != nil {
+			return nil, err
+		}
+		total := commitNote.Total()
+		projName := filepath.Base(projPath)
+		projectTotals[projName] = struct {
 			Total int
 			Label string
 		}{total, util.FormatDuration(total)}
 	}
 
-	return json.Marshal(projects)
-}
-
-// GetTimeline gets
-func GetTimeline(r *http.Request) ([]byte, error) {
-	notes, err := getCommitNotes(r)
-	if err != nil {
-		return nil, err
-	}
-
-	timeline, err := notes.timeline()
-	if err != nil {
-		return nil, err
-	}
-
-	timelinef := []struct {
-		Day      string
-		Seconds  int
-		Hours    [24]int
-		Duration string
-	}{}
-	for _, entry := range timeline {
-		entryf := struct {
-			Day      string
-			Seconds  int
-			Hours    [24]int
-			Duration string
-		}{entry.Day, entry.Seconds, entry.Hours, entry.Duration()}
-		timelinef = append(timelinef, entryf)
-	}
-
-	return json.Marshal(timelinef)
+	return json.Marshal(projectTotals)
 }
 
 func getCommitNotes(r *http.Request) (commitNoteDetails, error) {
@@ -146,41 +125,4 @@ func getCommitNotes(r *http.Request) (commitNoteDetails, error) {
 
 	notes := retrieveNotes(projCommits, false, false, false, "Mon Jan 02")
 	return notes, nil
-}
-
-// GetStatusTotals returns the status data.
-func GetStatusTotals(r *http.Request) ([]byte, error) {
-	var (
-		err        error
-		commitNote note.CommitNote
-	)
-
-	index, err := project.NewIndex()
-	if err != nil {
-		return nil, err
-	}
-
-	tagList := []string{}
-	projects, err := index.Get(tagList, true)
-	if err != nil {
-		return nil, err
-	}
-
-	projectTotals := map[string]struct {
-		Total int
-		Label string
-	}{}
-	for _, projPath := range projects {
-		if commitNote, err = metric.Process(true, projPath); err != nil {
-			return nil, err
-		}
-		total := commitNote.Total()
-		projName := filepath.Base(projPath)
-		projectTotals[projName] = struct {
-			Total int
-			Label string
-		}{total, util.FormatDuration(total)}
-	}
-
-	return json.Marshal(projectTotals)
 }
