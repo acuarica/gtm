@@ -7,7 +7,6 @@ package command
 import (
 	"flag"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strings"
 
@@ -51,7 +50,8 @@ func (c WebCmd) Run(args []string) int {
 
 	c.UI.Output(fmt.Sprintf("Starting local web server at port %d ... ", port))
 
-	http.HandleFunc("/", c.viewHandler)
+	// FIXME: Process's working dir needs to be in project root
+	http.Handle("/", http.FileServer(http.Dir("web/dist/")))
 	http.HandleFunc("/data/commits", c.createDataHandler(report.GetCommitNotes))
 	http.HandleFunc("/data/projects/totals", c.createDataHandler(report.GetProjectTotals))
 	http.HandleFunc("/data/timeline", c.createDataHandler(report.GetTimeline))
@@ -63,12 +63,6 @@ func (c WebCmd) Run(args []string) int {
 	}
 
 	return 0
-}
-
-func (c WebCmd) viewHandler(w http.ResponseWriter, r *http.Request) {
-	// FIXME: Working dir needs to be in project root
-	t, _ := template.ParseFiles("web/index.html")
-	t.Execute(w, nil)
 }
 
 func (c WebCmd) createDataHandler(f func(r *http.Request) ([]byte, error)) http.HandlerFunc {
