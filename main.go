@@ -48,8 +48,8 @@ func main() {
 				UI: ui,
 			}, nil
 		},
-		"web": func() (cli.Command, error) {
-			return &command.WebCmd{
+		"export": func() (cli.Command, error) {
+			return &command.ExportCmd{
 				UI: ui,
 			}, nil
 		},
