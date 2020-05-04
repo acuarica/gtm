@@ -1,0 +1,15 @@
+[ver:1,total:13200]
+.gtm/terminal.app:7719,1587592800:180,1587603600:180,1587632400:30,1587650400:180,1587661200:180,1587726000:420,1587729600:300,1587776400:360,1587866400:180,1587909600:720,1587913200:180,1587916800:180,1587974400:150,1587996000:360,1587999600:390,1588010400:180,1588014000:180,1588017600:284,1588039200:180,1588042800:180,1588100400:180,1588122000:180,1588136400:120,1588140000:120,1588143600:180,1588161600:180,1588165200:180,1588237200:220,1588240800:700,1588464000:180,1588557600:410,1588629600:60,1588633200:15,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/command/export.go:1396,1588237200:670,1588240800:661,1588557600:50,1588633200:15,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/report/web.go:822,1587999600:165,1588017600:397,1588237200:260,d
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/report/export.go:800,1588240800:440,1588557600:270,1588629600:90,r
+report/web.go:730,1587628800:330,1587632400:370,1587974400:30,d
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/command/report.go:469,1588237200:70,1588240800:399,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/command/web.go:454,1587999600:75,1588017600:159,1588237200:220,d
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/scm/git.go:430,1587628800:30,1587632400:140,1588240800:20,1588629600:210,1588633200:30,r
+main.go:180,1588633200:180,m
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/project/index.go:60,1587999600:30,1588557600:30,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/project/project.go:50,1588557600:20,1588633200:30,r
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/main.go:40,1588237200:40,r
+command/export.go:30,1588633200:30,m
+../../../../../Users/luigi/go/src/github.com/git-time-metric/gtm/command/status.go:20,1588237200:20,r
